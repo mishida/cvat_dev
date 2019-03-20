@@ -1,0 +1,372 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CVAT Base definition
+Parameters:
+  DeployId:
+    Type: String
+    Description: Deploy id to prevent a CloudFormation error that no change has been made to the template.
+  Env: {Type: String, Default: dev, AllowedValues: [dev, stg, prod]}
+  Region: {Type: String, Default: ap-northeast-1}
+  BucketNameBundle:
+    Type: String
+    Description: S3 bucket name for bundle files.
+  BucketNameArtifacts:
+    Type: String
+    Description: S3 bucket name for artifact files.
+  LifecyclePolicyText:
+    Type: String
+    Description: Lifecycle policy text for ECR repository.
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-gw"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  RouteTablePublic:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-route-public"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  RouteTablePrivate:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-route-private"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  RoutePublic:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  SubnetWebA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}a"
+      CidrBlock: 10.0.136.0/22
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-web-a"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetWebC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}c"
+      CidrBlock: 10.0.140.0/22
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-web-c"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetDBA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}a"
+      CidrBlock: 10.0.194.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-db-a"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetDBC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}c"
+      CidrBlock: 10.0.195.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-db-c"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetRedisA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}a"
+      CidrBlock: 10.0.196.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-redis-a"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetRedisC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Sub "${Region}c"
+      CidrBlock: 10.0.197.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-subnet-redis-c"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SubnetRouteTableAssociationWebA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetWebA
+      RouteTableId: !Ref RouteTablePublic
+  SubnetRouteTableAssociationWebC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetWebC
+      RouteTableId: !Ref RouteTablePublic
+  SubnetRouteTableAssociationDBA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetDBA
+      RouteTableId: !Ref RouteTablePrivate
+  SubnetRouteTableAssociationDBC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetDBC
+      RouteTableId: !Ref RouteTablePrivate
+  SubnetRouteTableAssociationRedisA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetRedisA
+      RouteTableId: !Ref RouteTablePrivate
+  SubnetRouteTableAssociationRedisC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetRedisC
+      RouteTableId: !Ref RouteTablePrivate
+  SecurityGroupWebALB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: CVAT Web ALB Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-sg-web-alb"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SecurityGroupWeb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: CVAT Web Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: !Ref SecurityGroupWebALB
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-sg-web"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SecurityGroupDB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: CVAT DB Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref SecurityGroupWeb
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-sg-db"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  SecurityGroupRedis:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: CVAT Redis Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Ref SecurityGroupWeb
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-sg-redis"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  Route53PrivateHostedZone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      HostedZoneConfig:
+        Comment: !Sub "Private HostedZone for CVAT ${Env} environment"
+      HostedZoneTags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-private-zone"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+      Name: !Sub "${Env}.cvat.local"
+      VPCs:
+        - VPCId: !Ref VPC
+          VPCRegion: !Ref Region
+  BucketBundle:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref BucketNameBundle
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-s3-bundle"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  BucketArtifacts:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref BucketNameArtifacts
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 7
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-s3-artifacts"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  ECRRepositoryWeb:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "cvat/web/${Env}"
+      LifecyclePolicy:
+        LifecyclePolicyText: !Ref LifecyclePolicyText
+Outputs:
+  OutputDeployIdBase:
+    Value: !Ref DeployId
+    Export:
+      Name: !Sub "CVAT${Env}DeployIdBase"
+  OutputVPC:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "CVAT${Env}VPC"
+  OutputSubnetWebA:
+    Value: !Ref SubnetWebA
+    Export:
+      Name: !Sub "CVAT${Env}SubnetWebA"
+  OutputSubnetWebC:
+    Value: !Ref SubnetWebC
+    Export:
+      Name: !Sub "CVAT${Env}SubnetWebC"
+  OutputSubnetDBA:
+    Value: !Ref SubnetDBA
+    Export:
+      Name: !Sub "CVAT${Env}SubnetDBA"
+  OutputSubnetDBC:
+    Value: !Ref SubnetDBC
+    Export:
+      Name: !Sub "CVAT${Env}SubnetDBC"
+  OutputSubnetRedisA:
+    Value: !Ref SubnetRedisA
+    Export:
+      Name: !Sub "CVAT${Env}SubnetRedisA"
+  OutputSubnetRedisC:
+    Value: !Ref SubnetRedisC
+    Export:
+      Name: !Sub "CVAT${Env}SubnetRedisC"
+  OutputSecurityGroupWebALB:
+    Value: !Ref SecurityGroupWebALB
+    Export:
+      Name: !Sub "CVAT${Env}SecurityGroupWebALB"
+  OutputSecurityGroupWeb:
+    Value: !Ref SecurityGroupWeb
+    Export:
+      Name: !Sub "CVAT${Env}SecurityGroupWeb"
+  OutputSecurityGroupDB:
+    Value: !Ref SecurityGroupDB
+    Export:
+      Name: !Sub "CVAT${Env}SecurityGroupDB"
+  OutputSecurityGroupRedis:
+    Value: !Ref SecurityGroupRedis
+    Export:
+      Name: !Sub "CVAT${Env}SecurityGroupRedis"
+  OutputRoute53PrivateHostedZoneId:
+    Value: !Ref Route53PrivateHostedZone
+    Export:
+      Name: !Sub "CVAT${Env}Route53PrivateHostedZoneId"
+  OutputBucketNameBundleArn:
+    Value: !GetAtt BucketBundle.Arn
+    Export:
+      Name: !Sub "CVAT${Env}BucketNameBundleArn"
+  OutputBucketNameArtifactsArn:
+    Value: !GetAtt BucketArtifacts.Arn
+    Export:
+      Name: !Sub "CVAT${Env}BucketNameArtifactsArn"
+  OutputECRRepositoryWeb:
+    Value: !Ref ECRRepositoryWeb
+    Export:
+      Name: !Sub "CVAT${Env}ECRRepositoryWeb"

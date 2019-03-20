@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+function check_usage() {
+  set +u
+  if [[ -z "${env}" ]]; then
+    cat <<EOS >&2
+Usage: $0 ENV
+Parameters:
+  ENV: 環境名
+EOS
+    exit 1
+  fi
+  set -u
+}
+
+function setup_constants() {
+  local envs=(dev stg prod)
+  if [[ ! ${envs[*]} =~ ${env} ]]; then
+    echo "wrong environment parameter '${env}' passed." >&2
+    exit 2
+  fi
+
+  local config="${cwd}/config/${env}"
+  if [[ -f "${config}" ]]; then
+    . "${config}"
+  else
+    echo "configuration file '${config}' is not found." >&2
+    exit 2
+  fi
+
+  local common="${cwd}/config/common"
+  . "${common}"
+
+  local secret="${cwd}/config/.secret"
+  if [[ -f "${secret}" ]]; then
+    . "${secret}"
+  fi
+
+  readonly DBUser="DBUser_${env}"
+  readonly DBPass="DBPass_${env}"
+}
+
+function get_cloudformation_exported_value() {
+  local name=$1
+  local value
+  value=$(aws cloudformation list-exports --profile cvat-${env} --region ${Region} --query "Exports[] | [?Name==${name}].Value" --output text)
+  if [[ -z "${value}" ]]; then
+    echo "Couldn't get CloudFormation exported value. Please make sure stack has already been deployed." >&2
+    exit 1
+  fi
+  echo ${value}
+}

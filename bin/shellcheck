@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function check() {
+  for script in $(find "${cwd}" "${cwd}/config" "${cwd}/lib" -type f -not -name 'wait-for-it' -maxdepth 1); do
+    shellcheck -e SC2154,SC2086,SC1090,SC2044,SC1117 ${script}
+  done
+}
+
+function main() {
+  local cwd
+  cwd="$(cd "$(dirname "$0")" && pwd)"
+  check
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

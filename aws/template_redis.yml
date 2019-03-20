@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CVAT Redis definition
+Parameters:
+  DeployId:
+    Type: String
+    Description: Deploy id to prevent a CloudFormation error that no change has been made to the template.
+  Env: {Type: String, Default: dev, AllowedValues: [dev, stg, prod]}
+  Region: {Type: String, Default: ap-northeast-1}
+  RedisCacheNodeType: {Type: String,}
+  RedisCacheParameterGroupName: {Type: String}
+  RedisEngineVersion: {Type: String}
+  RedisNumCacheClusters: {Type: Number}
+Resources:
+  RedisCacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: !Sub "CVAT ${Env} redis subnet group"
+      SubnetIds:
+        - Fn::ImportValue: !Sub "CVAT${Env}SubnetRedisA"
+        - Fn::ImportValue: !Sub "CVAT${Env}SubnetRedisC"
+  RedisReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      AutomaticFailoverEnabled: true
+      AutoMinorVersionUpgrade: true
+      CacheNodeType: !Ref RedisCacheNodeType
+      CacheParameterGroupName: !Ref RedisCacheParameterGroupName
+      CacheSubnetGroupName: !Ref RedisCacheSubnetGroup
+      Engine: redis
+      EngineVersion: !Ref RedisEngineVersion
+      NumCacheClusters: !Ref RedisNumCacheClusters
+      PreferredMaintenanceWindow: sun:18:00-sun:19:00
+      ReplicationGroupDescription: CVAT Redis Replication Group
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub "CVAT${Env}SecurityGroupRedis"
+      SnapshotRetentionLimit: 7
+      SnapshotWindow: sun:19:00-sun:20:00
+  RedisEndpointCNAMERecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId:
+        Fn::ImportValue: !Sub "CVAT${Env}Route53PrivateHostedZoneId"
+      Name: !Sub "redis.${Env}.cvat.local."
+      ResourceRecords:
+        - !GetAtt RedisReplicationGroup.PrimaryEndPoint.Address
+      TTL: 60
+      Type: CNAME
+Outputs:
+  OutputRedisDeployId:
+    Value: !Ref DeployId
+    Export:
+      Name: !Sub "CVAT${Env}RedisDeployId"

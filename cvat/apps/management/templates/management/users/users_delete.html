@@ -1,0 +1,26 @@
+{% extends 'management_base.html' %}
+
+{% block head_title %}
+    CVAT | User Delete
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'users' %}">Users</a></li>
+<li class="breadcrumb-item active" aria-current="page">User Delete</li>
+{% endblock %}
+
+{% block content %}
+<h4 class="page-header">User Delete</h4>
+<br>
+<form method="post">
+    {% csrf_token %}
+    <p>
+        Are you sure you want to delete the user <b>"{{ object }}"</b> ?
+    </p>
+    <br>
+    <p>
+        <a class="btn btn-default" href="{% url 'users' %}" role="button">No, take me back</a>
+        <input type="submit" class="btn btn-danger" value="Yes, I'm sure">
+    </p>
+</form>
+{% endblock %}

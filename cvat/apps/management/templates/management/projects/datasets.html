@@ -1,0 +1,56 @@
+{% extends 'management_base.html' %}
+
+{% block head_title %}
+    CVAT | Datasets
+{% endblock %}
+
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+<li class="breadcrumb-item active" aria-current="page">Datasets</li>
+{% endblock %}
+
+{% block content %}
+<h3 class="page-header">Datasets</h3>
+<a class="btn btn-primary" href="{% url 'datasets_create' project.id %}" role="button">Create New Dataset</a>
+<br>
+<br>
+<div class="panel panel-default">
+    <div class="panel-heading">
+        {{ project }}
+    </div>
+    <!-- /.panel-heading -->
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Dataset Name</th>
+                        <th>In Progress/Tasks</th>
+                        <th>Due Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dataset in datasets %}
+                    <tr>
+                        <td>{{ dataset.name }}</a></td>
+                        <td>0/0</td>
+                        <td>{{ dataset.due_date }}</td>
+                        <td>
+                            <a class="btn btn-primary btn-sm" href="{% url 'datasets_update' project.id dataset.id %}" role="button">Setting</a>
+                            <a class="btn btn-primary btn-sm" href="{% url 'tasks' project.id dataset.id %}" role="button">Tasks</a>
+                            <a class="btn btn-primary btn-sm" href="#" role="button">Assignee</a>
+                            <a class="btn btn-primary btn-sm" href="#" role="button">Dump Annotation</a>
+                            <a class="btn btn-danger btn-sm" href="{% url 'datasets_delete' project.id dataset.id %}" role="button">Delete</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- /.panel-body -->
+</div>
+<!-- /.panel -->
+{% endblock %}

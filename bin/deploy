@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function deploy_stack_base() {
+  local stack_name="CVAT${env}BaseStack"
+  echo "Start to deploy ${stack_name}"
+  aws cloudformation deploy \
+    --profile cvat-${env} \
+    --region ${Region} \
+    --template-file ${cwd}/../aws/template_base.yaml \
+    --stack-name ${stack_name} \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+      DeployId=${deploy_id} \
+      Env=${env} \
+      Region=${Region} \
+      BucketNameBundle=${BucketNameBundle} \
+      BucketNameArtifacts=${BucketNameArtifacts} \
+      LifecyclePolicyText="${LifecyclePolicyText}"
+}
+
+function deploy_stack_db() {
+  local stack_name="CVAT${env}DBStack"
+  echo "Start to deploy ${stack_name}"
+  local MasterUsername
+  MasterUsername=$(eval echo '$'$DBUser)
+  local MasterUserPassword
+  MasterUserPassword=$(eval echo '$'$DBPass)
+  aws cloudformation deploy \
+    --profile cvat-${env} \
+    --region ${Region} \
+    --template-file ${cwd}/../aws/template_db.yml \
+    --stack-name ${stack_name} \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+      DeployId=${deploy_id} \
+      Env=${env} \
+      Region=${Region} \
+      MasterUsername=${MasterUsername} \
+      MasterUserPassword=${MasterUserPassword} \
+      BackupRetentionPeriod=${BackupRetentionPeriod} \
+      DBInstanceClass=${DBInstanceClass} \
+      AllocatedStorage=${AllocatedStorage}
+}
+
+function deploy_stack_redis() {
+  local stack_name="CVAT${env}RedisStack"
+  echo "Start to deploy ${stack_name}"
+  aws cloudformation deploy \
+    --profile cvat-${env} \
+    --region ${Region} \
+    --template-file ${cwd}/../aws/template_redis.yml \
+    --stack-name ${stack_name} \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+      DeployId=${deploy_id} \
+      Env=${env} \
+      Region=${Region} \
+      RedisCacheNodeType=${RedisCacheNodeType} \
+      RedisCacheParameterGroupName=${RedisCacheParameterGroupName} \
+      RedisEngineVersion=${RedisEngineVersion} \
+      RedisNumCacheClusters=${RedisNumCacheClusters}
+}
+
+function setup_aws_cli_credential() {
+  # required for docker command to push image to ECR
+  cmd=$(aws ecr get-login --profile cvat-${env} --no-include-email --region ${Region})
+  eval ${cmd}
+}
+
+function push_image() {
+  local ecr="${AWSAccountId}.dkr.ecr.${Region}.amazonaws.com"
+  docker build \
+    --build-arg ENV=${env} \
+    --build-arg USER=django \
+    --build-arg DJANGO_CONFIGURATION=production \
+  -t ${Repository} -f "${cwd}/../Dockerfile" .
+  docker tag ${Repository} ${ecr}/${Repository}
+  docker push ${ecr}/${Repository}
+}
+
+function get_image_digest() {
+  local digest
+  digest=$(aws ecr describe-images \
+    --profile cvat-${env} \
+    --region ${Region} \
+    --repository-name ${Repository} \
+    --image-ids '[{"imageTag": "latest"}]' \
+    --output json | jq -r '.imageDetails[0].imageDigest')
+  if [[ -z "${digest}" ]]; then
+    echo "Couldn't get image digest. Please make sure image has already been pushed to the registry." >&2
+    exit 1
+  fi
+  echo ${digest}
+}
+
+function upload_bundle() {
+  local run_file=Dockerrun.aws.json
+  local bundle_file=web.zip
+  sed \
+    -e "s/%%AWSAccountId%%/${AWSAccountId}/g" \
+    -e "s/%%Region%%/${Region}/g" \
+    -e "s#%%Repository%%#${Repository}#g" \
+    -e "s/%%ContainerMemory%%/${ContainerMemory}/g" \
+    -e "s/%%LogGroupNameWeb%%/${LogGroupNameWeb}/g" \
+    "${cwd}/../${run_file}.tmpl" > "${cwd}/../${run_file}"
+  rm -f ${cwd}/../${bundle_file}
+  zip -j ${cwd}/../${bundle_file} ${cwd}/../${run_file}
+  aws s3 cp --profile cvat-${env} "${cwd}/../${bundle_file}" "s3://${BucketNameBundle}/"
+}
+
+function deploy_stack_web() {
+  local stack_name="CVAT${env}WebStack"
+  echo "Start to deploy ${stack_name}"
+  local digest
+  digest=$(get_image_digest)
+  aws cloudformation deploy \
+    --profile cvat-${env} \
+    --region ${Region} \
+    --template-file ${cwd}/../aws/template_web.yaml \
+    --stack-name ${stack_name} \
+    --capabilities CAPABILITY_IAM \
+    --parameter-overrides \
+      DeployId=${deploy_id} \
+      Env=${env} \
+      Region=${Region} \
+      ImageDigest=${digest} \
+      DomainWeb=${DomainWeb} \
+      InstanceType=${InstanceType} \
+      BucketNameBundle=${BucketNameBundle} \
+      AutoScalingAvailabilityZones="${AutoScalingAvailabilityZones}" \
+      AutoScalingMinSize=${AutoScalingMinSize} \
+      AutoScalingMaxSize=${AutoScalingMaxSize} \
+      LogGroupNameWeb=${LogGroupNameWeb} \
+      SSLCertificateArn=${SSLCertificateArn} \
+      DBHost=${DBHost} \
+      DBName=${DBName} \
+      DBUser=$(eval echo '$'$DBUser) \
+      DBPass=$(eval echo '$'$DBPass) \
+      RedisHost=${RedisHost} \
+      BasicAuthUsers=${BasicAuthUsers}
+}
+
+main() {
+  local env="$1"
+  local cwd
+  cwd="$(cd "$(dirname "$0")" && pwd)"
+  . ${cwd}/lib/common
+  check_usage
+  setup_constants
+  echo "Start to deploy CVAT to [${env}] environment."
+  local deploy_id
+  deploy_id=$(uuidgen | sed -e "s/-//g")
+  deploy_stack_base
+  deploy_stack_db
+  deploy_stack_redis
+  setup_aws_cli_credential
+  push_image
+  upload_bundle
+  deploy_stack_web
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

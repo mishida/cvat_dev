@@ -1,0 +1,29 @@
+{% extends 'management_base.html' %}
+
+{% block head_title %}
+    CVAT | Project Delete
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+<li class="breadcrumb-item active" aria-current="page">Project Delete</li>
+{% endblock %}
+
+{% block content %}
+<h4 class="page-header">Project Delete</h4>
+<br>
+<form method="post">
+    {% csrf_token %}
+    <p>
+        Are you sure you want to delete the project <b>"{{ project }}"</b> ?
+    </p>
+    <p>
+        All of the following related items will be deleted!!
+    </p>
+    <br>
+    <p>
+        <a class="btn btn-default" href="{% url 'projects' %}" role="button">No, take me back</a>
+        <input type="submit" class="btn btn-danger" value="Yes, I'm sure">
+    </p>
+</form>
+{% endblock %}

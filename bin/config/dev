@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# General settings
+readonly Env=dev
+readonly Region=ap-northeast-1
+readonly AWSAccountId=965280512434
+
+# Domain
+readonly DomainWeb=${Env}.laboro-cvat.site
+
+# ECR
+readonly Repository=cvat/web/${Env}
+
+# S3 Bucket
+readonly BucketNameBundle=cvat.${Env}.bundle
+readonly BucketNameArtifacts=cvat.${Env}.artifacts
+
+# Beanstalk
+readonly InstanceType=t2.micro
+readonly ContainerMemory=920
+readonly AutoScalingAvailabilityZones="Any 2"
+readonly AutoScalingMinSize=1
+readonly AutoScalingMaxSize=2
+
+# ACM
+readonly SSLCertificateArn=arn:aws:acm:ap-northeast-1:965280512434:certificate/fc889fa5-c23e-4ef4-b52c-a97cbb9e98f5
+
+# DB
+readonly DBHost=db.${Env}.cvat.local
+readonly DBName=cvat
+readonly BackupRetentionPeriod=1
+readonly DBInstanceClass=db.t2.small
+readonly AllocatedStorage=100
+
+# Redis
+readonly RedisHost=redis.${Env}.cvat.local
+readonly RedisCacheNodeType=cache.t2.micro
+readonly RedisCacheParameterGroupName=default.redis4.0
+readonly RedisEngineVersion=4.0.10
+readonly RedisNumCacheClusters=2
+
+# CloudWatch
+readonly LogGroupNameWeb=cvat-${Env}-log-web

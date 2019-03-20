@@ -1,0 +1,16 @@
+{
+    "python.pythonPath": ".venv/bin/python",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Path": ".venv/bin/flake8",
+    "python.formatting.provider": "autopep8",
+    "python.formatting.autopep8Path": ".venv/bin/autopep8",
+    "files.exclude": {
+        "**/__pycache__": true,
+        ".pytest_cache": true,
+        "**/*.pyc": true,
+    },
+    "search.exclude": {
+        ".venv/": true,
+    },
+}

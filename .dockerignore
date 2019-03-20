@@ -1,0 +1,13 @@
+/.git
+/share
+/data
+/media
+/.env
+/.vscode
+/db.sqlite3
+/keys
+
+.venv
+__pycache__
+*.pyc
+.pytest_cache

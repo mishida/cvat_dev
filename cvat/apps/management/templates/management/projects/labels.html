@@ -1,0 +1,91 @@
+{% extends 'management_base.html' %}
+
+{% block head_title %}
+    CVAT | Annotation Setting
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+<li class="breadcrumb-item active" aria-current="page">Annotation Setting: {{ project.name }}</li>
+{% endblock %}
+
+{% block content %}
+<h3 class="page-header">Annotation Setting: {{ project.name }}</h3>
+<br>
+<form action="{% url 'labels' project.id %}" method="post">
+    {% csrf_token %}
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.label.label_tag }}</label>
+        <div class="col-sm-9">
+            {{ form.label }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.attribute.label_tag }}</label>
+        <div class="col-sm-9">
+            {{ form.attribute }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.prefix.label_tag }}</label>
+        <div class="col-sm-9">
+            <label class="radio-inline">
+                <input type="radio" name="prefix" value="@" checked>
+                    {{ form.prefix.0 }}
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="prefix" value="~">
+                    {{ form.prefix.1 }}
+            </label>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.input_type.label_tag }}</label>
+        <div class="col-sm-9">
+            <label class="radio-inline">
+                <input type="radio" name="input_type" value="select=" checked>
+                    {{ form.input_type.0 }}
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="input_type" value="checkbox=">
+                    {{ form.input_type.1 }}
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="input_type" value="radio=">
+                    {{ form.input_type.2 }}
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="input_type" value="number=">
+                    {{ form.input_type.3 }}
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="input_type" value="text=">
+                    {{ form.input_type.4 }}
+            </label>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.value1.label_tag }}</label>
+        <div class="col-sm-9">
+            {{ form.value1 }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.value2.label_tag }}</label>
+        <div class="col-sm-9">
+            {{ form.value2 }}
+        </div>
+    </div>
+    <div class="form-group row">
+        <label class="col-sm-3 col-form-label">{{ form.value3.label_tag }}</label>
+        <div class="col-sm-9">
+            {{ form.value3 }}
+        </div>
+    </div>
+    <br>
+    <p>
+        <a class="btn btn-default" href="{% url 'projects' %}" role="button">Back</a>
+        <input class="btn btn-primary" type="submit" value="Save">
+    </p>
+</form>
+{% endblock %}

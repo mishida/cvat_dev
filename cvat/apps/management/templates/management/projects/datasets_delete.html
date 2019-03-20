@@ -1,0 +1,30 @@
+{% extends 'management_base.html' %}
+
+{% block head_title %}
+    CVAT | Dataset Delete
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+<li class="breadcrumb-item"><a href="{% url 'datasets' project.id %}">Datasets</a></li>
+<li class="breadcrumb-item active" aria-current="page">Dataset Setting</li>
+{% endblock %}
+
+{% block content %}
+<h4 class="page-header">Dataset Delete</h4>
+<br>
+<form method="post">
+    {% csrf_token %}
+    <p>
+        Are you sure you want to delete the project <b>"{{ dataset }}"</b> ?
+    </p>
+    <p>
+        All of the following related items will be deleted!!
+    </p>
+    <br>
+    <p>
+        <a class="btn btn-default" href="{% url 'datasets' project.id %}" role="button">No, take me back</a>
+        <input type="submit" class="btn btn-danger" value="Yes, I'm sure">
+    </p>
+</form>
+{% endblock %}

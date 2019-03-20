@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+# ECR
+readonly LifecyclePolicyText=$(cat <<EOS
+{
+  "rules": [
+    {
+      "rulePriority": 1,
+      "description": "Common lifecycle policy",
+      "selection": {
+        "tagStatus": "untagged",
+        "countType": "imageCountMoreThan",
+        "countNumber": 30
+      },
+      "action": {
+        "type": "expire"
+      }
+    }
+  ]
+}
+EOS
+)

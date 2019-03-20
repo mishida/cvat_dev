@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CVAT DB definition
+Parameters:
+  DeployId:
+    Type: String
+    Description: Deploy id to prevent a CloudFormation error that no change has been made to the template.
+  Env: {Type: String, Default: dev, AllowedValues: [dev, stg, prod]}
+  Region: {Type: String, Default: ap-northeast-1}
+  MasterUsername: {Type: String, NoEcho: true}
+  MasterUserPassword: {Type: String, NoEcho: true}
+  BackupRetentionPeriod: {Type: Number}
+  DBInstanceClass: {Type: String}
+  AllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: The amount of storage in GB.
+Resources:
+  DBPrimaryInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: !Ref AllocatedStorage
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      AvailabilityZone: !Sub "${Region}a"
+      BackupRetentionPeriod: !Ref BackupRetentionPeriod
+      CopyTagsToSnapshot: true
+      DBInstanceClass: !Ref DBInstanceClass
+      DBName: cvat
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      Engine: postgres
+      EngineVersion: 10.3
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      MultiAZ: false
+      PreferredBackupWindow: 16:00-17:00
+      PreferredMaintenanceWindow: sun:18:00-sun:19:00
+      PubliclyAccessible: false
+      StorageEncrypted: true
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub "CVAT${Env}SecurityGroupDB"
+      Tags:
+        - Key: Name
+          Value: !Sub "cvat-${Env}-db-instance"
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub "CVAT ${Env} db subnet group"
+      SubnetIds:
+        - Fn::ImportValue: !Sub "CVAT${Env}SubnetDBA"
+        - Fn::ImportValue: !Sub "CVAT${Env}SubnetDBC"
+  DBInstanceEndpointCNAMERecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId:
+        Fn::ImportValue: !Sub "CVAT${Env}Route53PrivateHostedZoneId"
+      Name: !Sub "db.${Env}.cvat.local."
+      ResourceRecords:
+        - !GetAtt DBPrimaryInstance.Endpoint.Address
+      TTL: 60
+      Type: CNAME
+Outputs:
+  OutputDBDeployId:
+    Value: !Ref DeployId
+    Export:
+      Name: !Sub "CVAT${Env}DBDeployId"

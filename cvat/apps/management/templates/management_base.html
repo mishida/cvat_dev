@@ -1,0 +1,125 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+
+        <title>
+        {% block head_title %}
+            Computer Vision Annotation Tool (CVAT)
+        {% endblock %}
+        </title>
+
+        <!-- Bootstrap Core CSS -->
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+
+        <!-- MetisMenu CSS -->
+        <link rel="stylesheet" href="{% static 'css/metisMenu.min.css' %}">
+
+        <!-- Custom CSS -->
+        <link rel="stylesheet" href="{% static 'css/startmin.css' %}">
+
+        <!-- Custom Fonts -->
+        <link href="{% static 'css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
+    </head>
+    <body>
+
+        <div id="wrapper">
+
+            <!-- Navigation -->
+            <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="{% url 'users' %}">CVAT</a>
+                </div>
+
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <ul class="nav navbar-nav navbar-left navbar-top-links">
+                    <li><a href="/" target="_blank"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a></li>
+                </ul>
+
+                <ul class="nav navbar-right navbar-top-links">
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="fa fa-user fa-fw"></i> User Profile <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu dropdown-user">
+                            <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
+                            </li>
+                            <li class="divider"></li>
+                            <li><a href="{% url 'logout' %}"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <!-- /.navbar-top-links -->
+
+                <div class="navbar-default sidebar" role="navigation">
+                    <div class="sidebar-nav navbar-collapse">
+                        <ul class="nav" id="side-menu">
+                            <li>
+                                <a href="{% url 'users' %}"><i class="fa fa-group fa-fw"></i> Users</a>
+                            </li>
+                            <li>
+                                <a href="{% url 'projects' %}"><i class="fa fa-tasks fa-fw"></i> Projects</a>
+                            </li>
+                            <li>
+                                <a href="#"><i class="fa fa-graduation-cap fa-fw" aria-disabled="true"></i> Learning models</a>
+                            </li>
+                            <li>
+                                <a href="#"><i class="fa fa-file-code-o fa-fw" aria-disabled="true"></i> Annotation Editing</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- /.sidebar-collapse -->
+                </div>
+                <!-- /.navbar-static-side -->
+            </nav>
+
+            <!-- Page Content -->
+            <div id="page-wrapper">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <br>
+                            <br>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb">
+                                    {% block breadcrumb %}
+                                    {% endblock %}
+                                </ol>
+                            </nav>
+                            {% block content %}
+                            {% endblock %}
+                        </div>
+                        <!-- /.col-lg-12 -->
+                    </div>
+                    <!-- /.row -->
+                </div>
+                <!-- /.container-fluid -->
+            </div>
+            <!-- /#page-wrapper -->
+
+        </div>
+        <!-- /#wrapper -->
+
+        <!-- jQuery -->
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+
+        <!-- Bootstrap Core JavaScript -->
+        <script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+        <!-- Metis Menu Plugin JavaScript -->
+        <script src="{% static 'js/metisMenu.min.js' %}"></script>
+
+        <!-- Custom Theme JavaScript -->
+        <script src="{% static 'js/startmin.js' %}"></script>
+
+    </body>
+</html>

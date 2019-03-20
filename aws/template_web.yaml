@@ -1,0 +1,265 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CVAT Web definition
+Parameters:
+  DeployId:
+    Type: String
+    Description: Deploy id to prevent an CloudFormation error that no change has been made to the template.
+  Env: {Type: String, Default: dev, AllowedValues: [dev, stg, prod]}
+  Region: {Type: String, Default: ap-northeast-1}
+  ImageDigest:
+    Type: String
+    Description: Digest of docker image.
+  DomainWeb:
+    Type: String
+    Description: Domain for Web.
+  InstanceType:
+    Type: String
+    Description: Instance type of EC2.
+  BucketNameBundle:
+    Type: String
+    Description: S3 bucket name for bundle files.
+  AutoScalingAvailabilityZones:
+    Type: String
+    Description: Availability zones of autoscaling of Beanstalk.
+  AutoScalingMinSize:
+    Type: Number
+    Description: Minimum size of autoscaling of Beanstalk.
+  AutoScalingMaxSize:
+    Type: Number
+    Description: Maximum size of autoscaling of Beanstalk.
+  LogGroupNameWeb:
+    Type: String
+    Description: Cloudwatch log group name for Beanstalk.
+  SSLCertificateArn:
+    Type: String
+    Description: ACM SSL certificate ARN.
+  DBHost: {Type: String}
+  DBName: {Type: String}
+  DBUser: {Type: String, NoEcho: true}
+  DBPass: {Type: String, NoEcho: true}
+  RedisHost: {Type: String}
+  BasicAuthUsers: {Type: String, NoEcho: true}
+Resources:
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSElasticBeanstalkMulticontainerDocker
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Policies:
+        - PolicyName: !Sub "CVAT${Env}BeanstalkInstancePolicy"
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - Fn::ImportValue: !Sub "CVAT${Env}BucketNameBundleArn"
+                  - !Join
+                      - ""
+                      - - Fn::ImportValue: !Sub "CVAT${Env}BucketNameBundleArn"
+                        - "/*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - logs:GetLogEvents
+                  - logs:FilterLogEvents
+                Resource: '*'
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles: [!Ref EC2Role]
+  BeanstalkApplicationWeb:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Sub "cvat-${Env}-beanstalk-app-web"
+  BeanstalkApplicationVersionWeb:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref BeanstalkApplicationWeb
+      # deployment is executed by changing `Description` property.
+      # so we can prevent deployment when docker image is not changed by including Digest of docker image.
+      Description: !Sub "CVAT ${Env} Web Version ${ImageDigest}"
+      SourceBundle:
+        S3Bucket: !Ref BucketNameBundle
+        S3Key: web.zip
+  BeanstalkEnvironmentWeb:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName:
+        Ref: BeanstalkApplicationWeb
+      VersionLabel:
+        Ref: BeanstalkApplicationVersionWeb
+      OptionSettings:
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: RUN_ON_AWS
+          Value: true
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DOMAIN_WEB
+          Value: !Ref DomainWeb
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_HOST
+          Value: !Ref DBHost
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_NAME
+          Value: !Ref DBName
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_USER
+          Value: !Ref DBUser
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: DB_PASS
+          Value: !Ref DBPass
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: REDIS_HOST
+          Value: !Ref RedisHost
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: BASICAUTH_USERS
+          Value: !Ref BasicAuthUsers
+        - Namespace: aws:ec2:vpc
+          OptionName: VPCId
+          Value:
+            Fn::ImportValue: !Sub "CVAT${Env}VPC"
+        - Namespace: aws:ec2:vpc
+          OptionName: Subnets
+          Value:
+            !Join
+              - ","
+              - - Fn::ImportValue: !Sub "CVAT${Env}SubnetWebA"
+                - Fn::ImportValue: !Sub "CVAT${Env}SubnetWebC"
+        - Namespace: aws:ec2:vpc
+          OptionName: ELBSubnets
+          Value:
+            !Join
+              - ","
+              - - Fn::ImportValue: !Sub "CVAT${Env}SubnetWebA"
+                - Fn::ImportValue: !Sub "CVAT${Env}SubnetWebC"
+        - Namespace: aws:ec2:vpc
+          OptionName: AssociatePublicIpAddress
+          Value: true
+        - Namespace: aws:elasticbeanstalk:environment
+          OptionName: LoadBalancerType
+          Value: application
+        - Namespace: aws:elbv2:loadbalancer
+          OptionName: ManagedSecurityGroup
+          Value:
+            Fn::ImportValue: !Sub "CVAT${Env}SecurityGroupWebALB"
+        - Namespace: aws:elbv2:loadbalancer
+          OptionName: SecurityGroups
+          Value:
+            Fn::ImportValue: !Sub "CVAT${Env}SecurityGroupWebALB"
+        - Namespace: aws:elbv2:listener:443
+          OptionName: Protocol
+          Value: HTTPS
+        - Namespace: aws:elbv2:listener:443
+          OptionName: SSLCertificateArns
+          Value: !Ref SSLCertificateArn
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: InstanceType
+          Value: !Ref InstanceType
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: IamInstanceProfile
+          Value: !GetAtt EC2InstanceProfile.Arn
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: EC2KeyName
+          Value: !Sub "cvat_${Env}"
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: SecurityGroups
+          Value:
+            !Join
+              - ","
+              - - Fn::ImportValue: !Sub "CVAT${Env}SecurityGroupWeb"
+        - Namespace: aws:autoscaling:asg
+          OptionName: MinSize
+          Value: !Ref AutoScalingMinSize
+        - Namespace: aws:autoscaling:asg
+          OptionName: MaxSize
+          Value: !Ref AutoScalingMaxSize
+        - Namespace: aws:autoscaling:asg
+          OptionName: Availability Zones
+          Value: !Ref AutoScalingAvailabilityZones
+        - Namespace: aws:elasticbeanstalk:healthreporting:system
+          OptionName: SystemType
+          Value: enhanced
+        - Namespace: aws:elasticbeanstalk:command
+          OptionName: DeploymentPolicy
+          Value: Rolling
+        - Namespace: aws:autoscaling:updatepolicy:rollingupdate
+          OptionName: RollingUpdateEnabled
+          Value: true
+        - Namespace: aws:autoscaling:updatepolicy:rollingupdate
+          OptionName: RollingUpdateType
+          Value: Health
+        - Namespace: aws:autoscaling:trigger
+          OptionName: MeasureName
+          Value: CPUUtilization
+        - Namespace: aws:autoscaling:trigger
+          OptionName: Statistic
+          Value: Average
+        - Namespace: aws:autoscaling:trigger
+          OptionName: Unit
+          Value: Percent
+        - Namespace: aws:autoscaling:trigger
+          OptionName: LowerThreshold
+          Value: 20
+        - Namespace: aws:autoscaling:trigger
+          OptionName: UpperThreshold
+          Value: 50
+        - Namespace: aws:autoscaling:trigger
+          OptionName: Period
+          Value: 5
+        - Namespace: aws:autoscaling:trigger
+          OptionName: BreachDuration
+          Value: 5
+        - Namespace: aws:elasticbeanstalk:application
+          OptionName: Application Healthcheck URL
+          Value: /ping
+        - Namespace: aws:elasticbeanstalk:environment:process:default
+          OptionName: HealthCheckPath
+          Value: /ping
+        - Namespace: aws:elasticbeanstalk:environment:process:default
+          OptionName: Port
+          Value: 80
+        - Namespace: aws:elasticbeanstalk:cloudwatch:logs
+          OptionName: StreamLogs
+          Value: true
+      SolutionStackName: 64bit Amazon Linux 2018.03 v2.11.7 running Multi-container Docker 18.06.1-ce (Generic)
+      Tags:
+        - Key: Project
+          Value: cvat
+        - Key: Env
+          Value: !Ref Env
+  # Todo: Should modify domain name and comment out after getting Domain on Route 53.
+  # Route53PublicALIASRecordWeb:
+  #   Type: AWS::Route53::RecordSet
+  #   Properties:
+  #     HostedZoneName: laboro-cvat.site.
+  #     Name: !Sub "${DomainWeb}."
+  #     Type: A
+  #     AliasTarget:
+  #       # Z14GRHDCWA56QT is the HostedZoneId of ALB defined by AWS.
+  #       HostedZoneId: Z14GRHDCWA56QT
+  #       DNSName: !GetAtt BeanstalkEnvironmentWeb.EndpointURL
+  CloudwatchLogsGroupWeb:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref LogGroupNameWeb
+      RetentionInDays: 7
+Outputs:
+  OutputWebDeployId:
+    Value: !Ref DeployId
+    Export:
+      Name: !Sub "CVAT${Env}WebDeployId"
