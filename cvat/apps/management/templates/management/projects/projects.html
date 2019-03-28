@@ -32,7 +32,7 @@
                     <a class="btn btn-primary btn-sm" href="{% url 'projects_update' project.id %}" role="button">Setting</a>
                     <a class="btn btn-primary btn-sm" href="{% url 'labels' project.id %}" role="button">Labels</a>
                     <a class="btn btn-primary btn-sm" href="{% url 'datasets' project.id %}" role="button">Datasets</a>
-                    <a class="btn btn-primary btn-sm" href="#" role="button">Assignees</a>
+                    <a class="btn btn-primary btn-sm" href="{% url 'project_assignees' project.id %}" role="button">Assignees</a>
                     <a class="btn btn-primary btn-sm" href="#" role="button">Dump Annotation</a>
                     <a class="btn btn-danger btn-sm" href="{% url 'projects_delete' project.id %}" role="button">Delete</a>
                 </td>

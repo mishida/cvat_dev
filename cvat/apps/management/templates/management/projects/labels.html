@@ -1,8 +1,14 @@
 {% extends 'management_base.html' %}
+{% load static %}
 
 {% block head_title %}
     CVAT | Annotation Setting
 {% endblock %}
+
+{% block head_custom_js %}
+    <script src="{% static 'management/js/labels.js' %}"></script>
+{% endblock %}
+
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
@@ -15,74 +21,75 @@
 <form action="{% url 'labels' project.id %}" method="post">
     {% csrf_token %}
     <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.label.label_tag }}</label>
-        <div class="col-sm-9">
-            {{ form.label }}
+        <label class="col-sm-2 col-form-label">Label Name:</label>
+        <div class="col-sm-2">
+            <input class="form-control" name="label">
         </div>
     </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.attribute.label_tag }}</label>
-        <div class="col-sm-9">
-            {{ form.attribute }}
+
+    <!-- Attribute Spec Group -->
+    <div class="attr-spec" id="attr_spec[0]">
+        <span class="close" title="Close" style="display: none;">Close</span>
+        <div class="form-group row">        
+            <label class="col-sm-2 col-sm-offset-1 col-form-label">Attribute Name:</label>
+            <div class="col-sm-2">
+                <input class="form-control" type="text" name="attr_name[0]" id="attr_name[0]">
+            </div>
         </div>
-    </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.prefix.label_tag }}</label>
-        <div class="col-sm-9">
-            <label class="radio-inline">
-                <input type="radio" name="prefix" value="@" checked>
-                    {{ form.prefix.0 }}
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="prefix" value="~">
-                    {{ form.prefix.1 }}
-            </label>
+        <div class="form-group row">
+            <label class="col-sm-2 col-sm-offset-1 col-form-label">Prefix:</label>
+            <div class="col-sm-6">
+                <label class="radio-inline">
+                    <input type="radio" name="prefix[0]" id="prefix[0]" value="@" checked>Unique
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="prefix[0]" id="prefix[0]" value="~">Temporary
+                </label>
+            </div>
         </div>
-    </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.input_type.label_tag }}</label>
-        <div class="col-sm-9">
-            <label class="radio-inline">
-                <input type="radio" name="input_type" value="select=" checked>
-                    {{ form.input_type.0 }}
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="input_type" value="checkbox=">
-                    {{ form.input_type.1 }}
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="input_type" value="radio=">
-                    {{ form.input_type.2 }}
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="input_type" value="number=">
-                    {{ form.input_type.3 }}
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="input_type" value="text=">
-                    {{ form.input_type.4 }}
-            </label>
+        <div class="form-group row">
+            <label class="col-sm-2 col-sm-offset-1 col-form-label">Input Type:</label>
+            <div class="col-sm-6">
+                <label class="radio-inline">
+                    <input type="radio" name="input_type[0]" id="input_type[0]" value="select=" checked>Select
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="input_type[0]" id="input_type[0]" value="checkbox=">Checkbox
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="input_type[0]" id="input_type[0]" value="radio=">Radio
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="input_type[0]" id="input_type[0]" value="number=">Number
+                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="input_type[0]" id="input_type[0]" value="text=">Text
+                </label>
+            </div>
         </div>
-    </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.value1.label_tag }}</label>
-        <div class="col-sm-9">
-            {{ form.value1 }}
+        <div class="form-group row">
+            <label class="col-sm-2 col-sm-offset-3 col-form-label">Attribute Value:</label>
+            <div class="col-sm-2">
+                <input class="form-control" type="text" name="attr_value1[0]" id="attr_value1[0]">
+            </div>
         </div>
-    </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.value2.label_tag }}</label>
-        <div class="col-sm-9">
-            {{ form.value2 }}
+        <div class="form-group row">
+            <label class="col-sm-2 col-sm-offset-3 col-form-label"></label>
+            <div class="col-sm-2">
+                <input class="form-control" type="text" name="attr_value2[0]" id="attr_value2[0]">
+            </div>
         </div>
-    </div>
-    <div class="form-group row">
-        <label class="col-sm-3 col-form-label">{{ form.value3.label_tag }}</label>
-        <div class="col-sm-9">
-            {{ form.value3 }}
+        <div class="form-group row">
+            <label class="col-sm-2 col-sm-offset-3 col-form-label"></label>
+            <div class="col-sm-2">
+                <input class="form-control" type="text" name="attr_value3[0]" id="attr_value3[0]">
+            </div>
         </div>
+    </div><!-- /Attribute Spec Group -->
+    <div class="attr-spec col-sm-4 col-sm-offset-1">
+        <span class="add" title="Add">+ Add Attribute Spec</span>
     </div>
-    <br>
+    <br><br>
     <p>
         <a class="btn btn-default" href="{% url 'projects' %}" role="button">Back</a>
         <input class="btn btn-primary" type="submit" value="Save">

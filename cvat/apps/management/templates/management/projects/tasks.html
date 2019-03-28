@@ -1,23 +1,27 @@
 {% extends 'management_base.html' %}
+{% load static %}
 
 {% block head_title %}
     CVAT | Tasks
 {% endblock %}
 
+{% block head_custom_js %}
+{% endblock %}
+
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
-<li class="breadcrumb-item"><a href="#">Datasets</a></li>
-<li class="breadcrumb-item active" aria-current="page">Tasks</li>
+    <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'datasets' dataset.id %}">{{ dataset }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Tasks</li>
 {% endblock %}
 
 {% block content %}
 <h3 class="page-header">Tasks</h3>
-<a class="btn btn-primary" href="#" role="button">Create New Task</a>
+<button class="btn btn-primary" data-toggle="modal" data-target="#modal-createTask">Create New Task</button>
 <br>
 <br>
 <div class="panel panel-default">
     <div class="panel-heading">
-        dataset1
+        {{ dataset }}
     </div>
     <!-- /.panel-heading -->
     <div class="panel-body">
@@ -32,22 +36,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for segment in object_list %}
-                    <tr>
-                        <td>{{ segment.task }}</a></td>
-                        <td>
-                            <img src="/get/task/{{ segment.task_id }}/frame/{{ segment.start_frame }}"
-                                alt="taskimage"
-                                 title="タスク"
-                                height="250">
-                        </td>
-                        <td>0</td>
-                        <td>
-                            <a class="btn btn-primary btn-sm" href="#" role="button">setting</a>
-                            <a class="btn btn-primary btn-sm" href="#" role="button">Dump Annotation</a>
-                            <a class="btn btn-danger btn-sm" href="#" role="button">Delete</a>
-                        </td>
-                    </tr>
+                    {% for task in data %}
+                        {% for segm in task.segment_set.all %}
+                            {% for job in segm.job_set.all %}
+                            <tr>
+                                <td><a href="{{base_url}}?id={{job.id}}"> {{ task.name }} </a></td>
+                                <td>
+                                    <img src="/get/task/{{ task.id }}/frame/0"
+                                        alt="taskimage"
+                                         title="タスク"
+                                        height="250">
+                                </td>
+                                <td>{{job.max_shape_id}}</td>
+                                <td>
+                                    <a class="btn btn-primary btn-sm" href="#" role="button">setting</a>
+                                    <a class="btn btn-primary btn-sm" href="#" role="button">Dump Annotation</a>
+                                    <a class="btn btn-danger btn-sm" href="#" role="button">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -56,4 +64,100 @@
     <!-- /.panel-body -->
 </div>
 <!-- /.panel -->
+
+<!-- modal "Create New Task" -->
+<div class="modal fade" id="modal-createTask" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h3 class="modal-title" id="modal-label">
+                    Task Configuration
+                </h3>
+            </div>
+            <div class="modal-body">
+                <form id="dashboardCreateContent" autocomplete="on" onsubmit="return false">
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Task Name:</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="dashboardNameInput" class="regular">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Labels:</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="dashboardLabelsInput" class="regular">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Bug Tracker:</label>
+                        <div class="col-sm-9">
+                            <input type="text" id="dashboardBugTrackerInput" class="regular" style="width: 90%" ,
+                                placeholder="Please specify full URL" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Source:</label>
+                        <div class="radio col-sm-9">
+                            <label class="radio-inline">
+                                <input id="dashboardLocalSource" type="radio" name="sourceType" value="local" checked=true />Local  
+                            </label>
+                            <label class="radio-inline">
+                                <input id="dashboardShareSource" type="radio" name="sourceType" value="share" />Share  
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Flip Images:</label>
+                        <div class="col-sm-9">
+                            <input type="checkbox" id="dashboardFlipImages" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Z-Order:</label>
+                        <div class="col-sm-9">
+                            <input type="checkbox" id="dashboardZOrder" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Overlap Size:</label>
+                        <div class="col-sm-9">
+                            <input type="number" id="dashboardOverlap" class="regular" max="50000" min="0" value="0" disabled=true />
+                            <input type="checkbox" id="dashboardCustomOverlap" title="Custom overlap size" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Segment Size:</label>
+                        <div class="col-sm-9">
+                            <input type="number" id="dashboardSegmentSize" class="regular" max="50000" min="100" value="5000"
+                                disabled=true />
+                            <input type="checkbox" id="dashboardCustomSegment" title="Custom segment size" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Image Quality:</label>
+                        <div class="col-sm-9">
+                            <input type="number" id="dashboardImageQuality" class="regular" style="width: 4.5em;" max="95" min="1"
+                                value="50" disabled=true />
+                            <input type="checkbox" id="dashboardCustomQuality" title="Custom image quality" />
+                        </div>
+                    </div>
+                    <P>
+                        <button id="dashboardSelectFiles" class="btn btn-default btn-sm"> Select Files</button>
+                        <label id="dashboardFilesLabel" class="regular h4" style="margin-left: 10px"> No Files</label>
+                        <input id="dashboardLocalFileSelector" type="file" style="display: none" multiple />
+                    </P>
+                    <br><br>
+                    <p>
+                        <button id="dashboardCancelTask" class="btn btn-default"> Cancel </button>
+                        <button id="dashboardSubmitTask" class="btn btn-primary"> Submit </button>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.modal -->
 {% endblock %}

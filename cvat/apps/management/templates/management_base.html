@@ -12,16 +12,32 @@
         </title>
 
         <!-- Bootstrap Core CSS -->
-        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'management/css/bootstrap.min.css' %}">
 
         <!-- MetisMenu CSS -->
-        <link rel="stylesheet" href="{% static 'css/metisMenu.min.css' %}">
+        <link rel="stylesheet" href="{% static 'management/css/metisMenu.min.css' %}">
 
         <!-- Custom CSS -->
-        <link rel="stylesheet" href="{% static 'css/startmin.css' %}">
+        <link rel="stylesheet" href="{% static 'management/css/startmin.css' %}">
 
         <!-- Custom Fonts -->
-        <link href="{% static 'css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
+        <link href="{% static 'management/css/font-awesome.min.css' %}" rel="stylesheet" type="text/css">
+
+        <!-- jQuery -->
+        <script type="text/javascript" src="{% static 'engine/js/3rdparty/jquery-3.3.1.js' %}"></script>
+
+        <!-- Bootstrap Core JavaScript -->
+        <script src="{% static 'management/js/bootstrap.min.js' %}"></script>
+
+        <!-- Metis Menu Plugin JavaScript -->
+        <script src="{% static 'management/js/metisMenu.min.js' %}"></script>
+
+        <!-- Custom Theme JavaScript -->
+        <script src="{% static 'management/js/startmin.js' %}"></script>
+
+        {% block head_custom_js %}
+        {% endblock %}
+        
     </head>
     <body>
 
@@ -108,18 +124,5 @@
 
         </div>
         <!-- /#wrapper -->
-
-        <!-- jQuery -->
-        <script src="{% static 'js/jquery.min.js' %}"></script>
-
-        <!-- Bootstrap Core JavaScript -->
-        <script src="{% static 'js/bootstrap.min.js' %}"></script>
-
-        <!-- Metis Menu Plugin JavaScript -->
-        <script src="{% static 'js/metisMenu.min.js' %}"></script>
-
-        <!-- Custom Theme JavaScript -->
-        <script src="{% static 'js/startmin.js' %}"></script>
-
     </body>
 </html>

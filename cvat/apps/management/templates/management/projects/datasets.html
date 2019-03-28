@@ -40,7 +40,7 @@
                         <td>
                             <a class="btn btn-primary btn-sm" href="{% url 'datasets_update' project.id dataset.id %}" role="button">Setting</a>
                             <a class="btn btn-primary btn-sm" href="{% url 'tasks' project.id dataset.id %}" role="button">Tasks</a>
-                            <a class="btn btn-primary btn-sm" href="#" role="button">Assignee</a>
+                            <a class="btn btn-primary btn-sm" href="{% url 'dataset_assignees' project.id dataset.id %}" role="button">Assignee</a>
                             <a class="btn btn-primary btn-sm" href="#" role="button">Dump Annotation</a>
                             <a class="btn btn-danger btn-sm" href="{% url 'datasets_delete' project.id dataset.id %}" role="button">Delete</a>
                         </td>
